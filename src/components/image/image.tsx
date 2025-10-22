@@ -9,8 +9,8 @@ import {
 import { Image as ImageIcon, ImageOff } from "lucide";
 
 import classes from "./image.module.scss";
-import * as strapi from "~/utils/strapi";
-import LucideIcon from "~/components/lucide-icon/lucide_icon";
+import * as strapi from "../../utils/strapi";
+import LucideIcon from "../../components/lucide-icon/lucide_icon";
 
 const DEFAULT_WIDTH = 1000;
 const DEFAULT_QUALITY = 80;

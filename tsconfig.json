@@ -1,4 +1,5 @@
 {
+  "noEmit": true,
   "compilerOptions": {
     "allowJs": true,
     "target": "ES2020",
@@ -15,10 +16,7 @@
     "skipLibCheck": true,
     "incremental": true,
     "isolatedModules": true,
-    "types": ["vite/client"],
-    "paths": {
-      "~/*": ["./src/*"]
-    }
+    "types": ["vite/client"]
   },
   "include": ["src", "./*.d.ts"]
 }

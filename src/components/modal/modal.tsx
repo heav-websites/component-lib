@@ -13,8 +13,8 @@ import { X } from "lucide";
 import type { JSX } from "@builder.io/qwik/jsx-runtime";
 
 import styles from "./modal.scss?inline";
-import LucideIcon from "~/components/lucide-icon/lucide_icon";
-import { useIdleMouse } from "~/hooks/use_idle_mouse";
+import LucideIcon from "../../components/lucide-icon/lucide_icon";
+import { useIdleMouse } from "../../hooks/use_idle_mouse";
 
 const InnerModal = (props: {
   ref: Signal<HTMLDivElement | undefined>,

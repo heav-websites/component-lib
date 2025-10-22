@@ -12,10 +12,10 @@ import {
   useVisibleTask$,
 } from "@builder.io/qwik";
 import styles from "./slideshow.scss?inline";
-import LucideIcon from "~/components/lucide-icon/lucide_icon";
+import LucideIcon from "../../components/lucide-icon/lucide_icon";
 import { ChevronLeft, ChevronRight } from "lucide";
-import { useIdleMouse } from "~/hooks/use_idle_mouse";
-import { useDebouncer } from "~/utils/useDebouncer";
+import { useIdleMouse } from "../../hooks/use_idle_mouse";
+import { useDebouncer } from "../../utils/useDebouncer";
 
 // Higher = faster animation
 const SMOOTH_SCROLL_DECAY = 8;
