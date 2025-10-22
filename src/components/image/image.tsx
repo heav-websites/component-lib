@@ -5,10 +5,11 @@ import {
   QRL,
   Slot,
   useComputed$,
+  useStylesScoped$,
 } from "@builder.io/qwik";
 import { Image as ImageIcon, ImageOff } from "lucide";
 
-import classes from "./image.module.scss";
+import styles from "./image.scss?inline";
 import * as strapi from "../../utils/strapi";
 import LucideIcon from "../../components/lucide-icon/lucide_icon";
 
@@ -46,6 +47,8 @@ export default component$<{
   srcWidth?: number, quality?: number,
   fetchPriority?: "high" | "low" | "auto",
 }>((props) => {
+  useStylesScoped$(styles);
+
   const url_args = useComputed$<URL_ARGS>(() => ({
     img: props.img,
     enabledCloudflareImageTransform: props.enabledCloudflareImageTransform ?? false,
@@ -70,20 +73,20 @@ export default component$<{
 
   return (
     <div
-      class={[classes["container"], props.containerClass]}
+      class={["container", props.containerClass]}
       onClick$={props.containerOnClick}
       style={{ "aspect-ratio": `${props.img.width} / ${props.img.height}`, ...props.containerStyles }}
       {...props.containerDataAttributes}
     >
-      <div class={classes["placeholder"]}>
-        <div class={[classes["loading-icon"], classes["icon-container"]]}>
+      <div class="placeholder">
+        <div class="loading-icon icon-container">
           <LucideIcon icon={ImageIcon} size={4} />
         </div>
-        <div class={[classes["error-icon"], classes["icon-container"]]}>
+        <div class="error-icon icon-container">
           <LucideIcon icon={ImageOff} size={4} />
         </div>
         <div
-          class={classes["contour"]}
+          class="contour"
           style={{
             "aspect-ratio":
               `${props.img.width} / ${props.img.height}`,
@@ -94,13 +97,13 @@ export default component$<{
       </div>
       <Slot name="before" />
       <img
-        {...{ onload: `this.parentElement.classList.add('${classes["loaded"]}')` } as any}
-        onLoad$={(_, el) => el.parentElement?.classList.add(classes[`loaded`])}
-        {...{ onerror: `this.parentElement.classList.add('${classes[`error`]}')` } as any}
-        onError$={(_, el) => el.parentElement?.classList.add(classes[`error`])}
+        {...{ onload: "this.parentElement.classList.add('loaded')" } as any}
+        onLoad$={(_, el) => el.parentElement?.classList.add("loaded")}
+        {...{ onerror: "this.parentElement.classList.add('error')" } as any}
+        onError$={(_, el) => el.parentElement?.classList.add("error")}
 
         alt={props.alt ?? props.img.alternativeText ?? undefined}
-        class={classes["image"]}
+        class="image"
         height={props.img.height}
         width={props.img.width}
         src={src.value}
