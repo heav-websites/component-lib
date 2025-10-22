@@ -1,0 +1,70 @@
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  z-index: 200;
+
+  position: fixed;
+  inset: 0;
+  pointer-events: all;
+
+  opacity: 1;
+  transition: opacity 150ms ease-in-out;
+
+  animation-name: modal-fade-in;
+  animation-duration: 150ms;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: 1;
+  animation-fill-mode: none;
+
+  &.closed {
+    opacity: 0;
+  }
+}
+
+.overlay {
+  z-index: 200;
+  position: absolute;
+  inset: 0;
+  transition: background 150ms ease-in-out;
+
+  &.opaque {
+    background: rgba(255, 255, 255);
+  }
+  &:not(.opaque) {
+    background: rgba(255, 255, 255, 50%);
+    backdrop-filter: blur(7px);
+  }
+}
+
+.content {
+  z-index: 210;
+  position: absolute;
+  inset: 0;
+}
+
+.close-button {
+  z-index: 220;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 3rem;
+  height: 3rem;
+  transition: transform 150ms ease-in-out, opacity 150ms ease-in-out;
+  transform: translateX(0);
+  opacity: 1;
+
+  &.hidden {
+    opacity: 0.25;
+    @media(hover: hover) {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+}

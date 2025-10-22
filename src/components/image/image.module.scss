@@ -1,0 +1,95 @@
+@keyframes spaceship {
+  from {
+    color: white;
+  }
+
+  to {
+    color: black;
+  }
+}
+
+.container {
+  position: relative;
+  display: block;
+
+  .placeholder {
+    opacity: 0.5;
+    transition: opacity 250ms ease-in-out 250ms;
+
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+
+    height: 100%;
+    width: 100%;
+
+    .contour {
+      transition: opacity 250ms ease-in-out 250ms;
+
+      position: absolute;
+      z-index: 4;
+      inset: 0;
+      margin: auto;
+      display: block;
+
+      background: #888;
+    }
+
+    .loading-icon {
+      animation-name: spaceship;
+      animation-iteration-count: infinite;
+      animation-direction: alternate;
+      animation-timing-function: ease-in-out;
+      animation-duration: 250ms;
+    }
+
+    .error-icon {
+      opacity: 0;
+      color: red;
+    }
+
+    .icon-container {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  }
+
+  .image {
+    object-fit: contain;
+    display: block;
+    height: 100%;
+    width: 100%;
+
+    opacity: 0;
+    transition: opacity 250ms ease-in-out;
+  }
+
+  &.loaded, &.error {
+    .loading-icon {
+      opacity: 0;
+      animation-state: paused;
+    }
+  }
+
+  &.loaded {
+    .placeholder {
+      opacity: 0;
+      .contour {
+        opacity: 0;
+      }
+    }
+    .image {
+      opacity: 1;
+    }
+  }
+
+  &.error {
+    .error-icon {
+      opacity: 1;
+    }
+  }
+}

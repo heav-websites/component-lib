@@ -1,0 +1,20 @@
+.lucide-icon {
+  position: relative;
+  overflow: visible;
+  > * {
+    position: relative;
+  }
+  > .other {
+    position: absolute;
+    inset: 0;
+    opacity: 1;
+    transition: opacity 250ms ease-in-out;
+  }
+}
+
+:global(button[disabled]) .other {
+  opacity: 0;
+}
+:global(button:disabled) .other {
+  opacity: 0;
+}
