@@ -31,5 +31,9 @@ export default defineConfig(() => {
       },
     },
     plugins: [qwikVite(), tsconfigPaths({ root: "." })],
+
+    server: {
+      port: 1234,
+    },
   };
 });
