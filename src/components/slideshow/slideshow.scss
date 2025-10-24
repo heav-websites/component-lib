@@ -58,6 +58,12 @@
     left: calc(100% * var(--index));
   }
 
+  &.centered {
+    .slideshow-page {
+      padding: 0.5rem 4rem;
+    }
+  }
+
   > .arrow {
     height: 100%;
 

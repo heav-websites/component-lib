@@ -4,6 +4,7 @@ import {
   Slot,
   component$,
   untrack,
+  useComputed$,
   useId,
   useOnWindow,
   useSignal,
@@ -13,7 +14,7 @@ import {
 } from "@builder.io/qwik";
 import styles from "./slideshow.scss?inline";
 import LucideIcon from "../../components/lucide-icon/lucide_icon";
-import { ChevronLeft, ChevronRight } from "lucide";
+import { ChevronLeft, ChevronRight, IconNode } from "lucide";
 import { useIdleMouse } from "../../hooks/use_idle_mouse";
 import { useDebouncer } from "../../utils/useDebouncer";
 
@@ -49,13 +50,31 @@ export default component$<{
   slide_count: number;
   slide_index?: number;
   on_changed_slide?: QRL<(index: number) => unknown>;
+  /** If set to false, disables the hiding of the arrows and of the mouse when
+   * the mouse is idle
+   */
+  idle_hide_arrows?: boolean,
+  /**
+   * Chose the icon for the left arrow
+   */
+  left_icon?: IconNode,
+  /**
+   * Chose the icon for the right arrow
+   */
+  right_icon?: IconNode,
+  /**
+   * When set to true, makes the content not be behind the arrows
+   */
+  centered?: boolean,
 }>((props) => {
   useStyles$(styles);
 
   const id = useId();
   const elementId = `${id}-element`;
 
-  const is_mouse_idle = useIdleMouse();
+  const is_mouse_idle_raw = useIdleMouse();
+  const is_mouse_idle = useComputed$(() => (props.idle_hide_arrows ?? true) && is_mouse_idle_raw.value);
+
   const current_touch = useSignal<{
     startTouchPos: {x: number, y: number},
     startTouchScrollLeft: number,
@@ -98,8 +117,9 @@ export default component$<{
   });
 
   const onWheel = $((e: WheelEvent) => {
-    const offset = Math.sign(e.deltaX) + Math.sign(e.deltaY);
-    debounced_change_slide(offset);
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      debounced_change_slide(Math.sign(e.deltaX));
+    }
   });
 
   useVisibleTask$(({ cleanup }) => {
@@ -132,7 +152,7 @@ export default component$<{
   });
 
   return (
-    <div class={{ slideshow: true, "force-round-cursor": is_mouse_idle.value }}>
+    <div class={{ slideshow: true, "force-round-cursor": is_mouse_idle.value, centered: props.centered ?? false }}>
       <div class={`arrow left-arrow ${is_mouse_idle.value ? "hide" : ""}`}>
         <button
           aria-label="Slide precedante"
@@ -140,7 +160,7 @@ export default component$<{
           disabled={props.slide_count <= 1 || slide_index.value === 0}
         >
           <LucideIcon
-            icon={ChevronLeft}
+            icon={props.left_icon ?? ChevronLeft}
             size={2} width={1}
             outline={{ size: 1, color: "white" }}
           />
@@ -151,7 +171,6 @@ export default component$<{
           class="slideshow-container"
           id={elementId}
 
-          preventdefault:wheel stoppropagation:wheel
           onWheel$={onWheel}
 
           preventdefault:touchmove
@@ -203,7 +222,7 @@ export default component$<{
           disabled={props.slide_count <= 1 || slide_index.value + 1 === props.slide_count}
         >
           <LucideIcon
-            icon={ChevronRight}
+            icon={props.right_icon ?? ChevronRight}
             size={2} width={1}
             outline={{ size: 1, color: "white" }}
           />
