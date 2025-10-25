@@ -41,7 +41,7 @@ function getChildWithClass(el: HTMLElement, clas: string): Element | null {
   return null;
 }
 
-function scrollAt(el: HTMLElement, idx: number): number {
+function leftScrollAtIndex(el: HTMLElement, idx: number): number {
   console.assert(Math.trunc(idx) === idx);
   const child = getChildWithClass(el, `slideshow-page-${idx}`);
   if (child == null) {
@@ -51,19 +51,52 @@ function scrollAt(el: HTMLElement, idx: number): number {
   return getOffsetLeftWithinParent(child, el);
 }
 
-function scrollAtInterpolated(el: HTMLElement, idx: number): number {
+function leftScrollAtIndexInterpolated(el: HTMLElement, idx: number): number {
   const whole = Math.trunc(idx);
   if (Math.abs(whole - idx) < 0.00001)
-    return scrollAt(el, Math.round(idx));
+    return leftScrollAtIndex(el, Math.round(idx));
 
   const floor = Math.floor(idx);
   const ceil = Math.ceil(idx);
 
   // const frac = Math.abs(idx - whole);
-  const lower = scrollAt(el, floor);
-  const higher = scrollAt(el, ceil);
+  const lower = leftScrollAtIndex(el, floor);
+  const higher = leftScrollAtIndex(el, ceil);
 
   return lower * (1 - Math.abs(floor - idx)) + higher * (1 - Math.abs(ceil - idx));
+}
+
+function indexAtLeftScroll(el: HTMLElement, scrollLeft: number): number {
+  type I = { dist: number, scroll: number, index: number };
+  let closestSmaller: I | null = null;
+  let closestBigger: I | null = null;
+
+  for (const child of el.children) {
+    const scroll = getOffsetLeftWithinParent(child, el);
+    const dist = Math.abs(scrollLeft - scroll);
+    if (scrollLeft >= scroll && (closestSmaller == null || closestSmaller.dist > dist)) {
+      closestSmaller = { dist, scroll, index: parseInt(child.getAttribute("data-slide-index") ?? "NaN") };
+    }
+    if (scrollLeft <= scroll && (closestBigger == null || closestBigger.dist > dist)) {
+      closestBigger = { dist, scroll, index: parseInt(child.getAttribute("data-slide-index") ?? "NaN") };
+    }
+  }
+
+  if (closestBigger === null || closestSmaller === null)
+    return closestBigger?.index ?? closestSmaller?.index ?? NaN;
+
+  const gap = closestBigger.scroll - closestSmaller.scroll;
+  if (gap === 0)
+    return closestBigger.index;
+
+  console.log({
+    closestBigger,
+    closestSmaller,
+    gap,
+    result: closestSmaller.index * (1 - closestSmaller.dist / gap) + closestBigger.index * (1 - closestBigger.dist / gap),
+  });
+
+  return closestSmaller.index * (1 - closestSmaller.dist / gap) + closestBigger.index * (1 - closestBigger.dist / gap);
 }
 
 export const SlidePage = component$<{
@@ -180,6 +213,9 @@ export default component$<{
     animated_slide_index.value = slide_index.value;
 
     const update = (dt: number) => {
+      const el = typeof document !== "undefined" ? document.getElementById(elementId) : null;
+      if (el == null) return;
+
       if (current_touch.value != null) return;
 
       animated_slide_index.value = slide_index.value + (animated_slide_index.value - slide_index.value) * Math.exp(-SMOOTH_SCROLL_DECAY * dt);
@@ -189,7 +225,7 @@ export default component$<{
         finiteIndex -= props.slide_count;
       while (finiteIndex <= -1)
         finiteIndex += props.slide_count;
-      el.scrollLeft = scrollAtInterpolated(el, finiteIndex);
+      el.scrollLeft = leftScrollAtIndexInterpolated(el, finiteIndex);
     };
     
     const frame = (t: number) => {
@@ -262,7 +298,10 @@ export default component$<{
               if (touch.identifier !== 0)
                 continue;
 
-              animated_slide_index.value = el.scrollLeft / el.clientWidth;
+              const newSlideIndex = indexAtLeftScroll(el, el.scrollLeft);
+              const closestAround = Math.round((animated_slide_index.value - newSlideIndex) / props.slide_count);
+              animated_slide_index.value = props.slide_count * closestAround + newSlideIndex;
+
               const dx = ct.startTouchPos.x - touch.clientX;
               if (Math.abs(dx) >= MIN_TOUCH_MOVEMENT)
                 change_slide(Math.sign(dx));
