@@ -189,10 +189,6 @@ export default component$<{
         finiteIndex -= props.slide_count;
       while (finiteIndex <= -1)
         finiteIndex += props.slide_count;
-      console.log({
-        infinite: Math.round(animated_slide_index.value * 100_000) / 100_000,
-        finite: finiteIndex,
-      });
       el.scrollLeft = scrollAtInterpolated(el, finiteIndex);
     };
     
