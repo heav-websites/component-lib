@@ -32,9 +32,18 @@ function getOffsetLeftWithinParent(el: Element, parent: Element) {
   return elRect.left - parentRect.left + parent.scrollLeft - remaining / 2;
 }
 
+function getChildWithClass(el: HTMLElement, clas: string): Element | null {
+  for (const child of el.children) {
+    if (child.classList.contains(clas)) {
+      return child;
+    }
+  }
+  return null;
+}
+
 function scrollAt(el: HTMLElement, idx: number): number {
   console.assert(Math.trunc(idx) === idx);
-  const child = el.children.item(idx);
+  const child = getChildWithClass(el, `slideshow-page-${idx}`);
   if (child == null) {
     console.warn(`No element found for slide index ${idx}`);
     return NaN;
@@ -47,31 +56,30 @@ function scrollAtInterpolated(el: HTMLElement, idx: number): number {
   if (Math.abs(whole - idx) < 0.00001)
     return scrollAt(el, Math.round(idx));
 
-  const frac = idx - whole;
-  const lower = scrollAt(el, Math.floor(idx));
-  const higher = scrollAt(el, Math.ceil(idx));
+  const floor = Math.floor(idx);
+  const ceil = Math.ceil(idx);
 
-  return lower * (1 - frac) + higher * frac;
+  // const frac = Math.abs(idx - whole);
+  const lower = scrollAt(el, floor);
+  const higher = scrollAt(el, ceil);
+
+  return lower * (1 - Math.abs(floor - idx)) + higher * (1 - Math.abs(ceil - idx));
 }
 
-type PageProps = {
+export const SlidePage = component$<{
   index: number;
   image?: boolean;
   id?: string;
-};
-
-export const SlidePage = component$<PageProps>((props) => {
+}>((props) => {
   return (
     <div
       data-slide-index={props.index}
       id={props.id}
-      class={{
-        "slideshow-page": true,
-        "slideshow-image-page": props.image ?? false,
-      }}
-      style={{
-        "--index": props.index,
-      }}
+      class={[
+        "slideshow-page", `slideshow-page-${props.index}`,
+        { "slideshow-image-page": props.image ?? false },
+      ]}
+      style={{ "--index": props.index }}
     >
       <Slot />
     </div>
@@ -99,6 +107,11 @@ export default component$<{
    * Defaults to true
    */
   full_width_slides?: boolean,
+  /**
+   * When set to true, allows scrolling infinitely
+   * Defaults to false
+   */
+  infinite?: boolean,
 }>((props) => {
   useStyles$(styles);
 
@@ -119,8 +132,11 @@ export default component$<{
   const change_slide = $((diff: number) => {
     const el = typeof document !== "undefined" ? document.getElementById(elementId) : null;
     if (el == null) return;
-
-    slide_index.value = Math.min(Math.max(slide_index.value + diff, 0), props.slide_count - 1);
+    let target = slide_index.value + diff;
+    if (!props.infinite) {
+      target = Math.min(Math.max(target, 0), props.slide_count - 1);
+    }
+    slide_index.value = target;
     props.on_changed_slide?.(slide_index.value);
   });
   const debounced_change_slide = useDebouncer(change_slide, 100);
@@ -167,7 +183,17 @@ export default component$<{
       if (current_touch.value != null) return;
 
       animated_slide_index.value = slide_index.value + (animated_slide_index.value - slide_index.value) * Math.exp(-SMOOTH_SCROLL_DECAY * dt);
-      el.scrollLeft = scrollAtInterpolated(el, animated_slide_index.value);
+
+      let finiteIndex = Math.round(animated_slide_index.value * 100_000) / 100_000;
+      while (finiteIndex >= props.slide_count)
+        finiteIndex -= props.slide_count;
+      while (finiteIndex <= -1)
+        finiteIndex += props.slide_count;
+      console.log({
+        infinite: Math.round(animated_slide_index.value * 100_000) / 100_000,
+        finite: finiteIndex,
+      });
+      el.scrollLeft = scrollAtInterpolated(el, finiteIndex);
     };
     
     const frame = (t: number) => {
@@ -194,7 +220,7 @@ export default component$<{
         <button
           aria-label="Slide precedante"
           onClick$={() => change_slide(-1)}
-          disabled={props.slide_count <= 1 || slide_index.value === 0}
+          disabled={!(props.infinite ?? false) && (props.slide_count <= 1 || slide_index.value === 0)}
         >
           <LucideIcon
             icon={props.left_icon ?? ChevronLeft}
@@ -256,7 +282,7 @@ export default component$<{
         <button
           aria-label="Slide suivante"
           onClick$={() => change_slide(1)}
-          disabled={props.slide_count <= 1 || slide_index.value + 1 === props.slide_count}
+          disabled={!(props.infinite ?? false) && (props.slide_count <= 1 || slide_index.value + 1 === props.slide_count)}
         >
           <LucideIcon
             icon={props.right_icon ?? ChevronRight}
