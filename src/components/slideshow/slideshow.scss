@@ -22,6 +22,9 @@
     position: absolute;
     inset: 0;
 
+    display: flex;
+    flex-direction: row;
+
     &::-webkit-scrollbar {
       display: none;
     }
@@ -48,19 +51,24 @@
 
     padding: 0.5rem;
 
-    position: absolute;
     height: 100%;
-    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-shrink: 0;
 
-    left: calc(100% * var(--index));
+    &:last-child {
+      margin-right: 100vw;
+    }
+
+    &:first-child {
+      margin-left: 100vw;
+    }
   }
 
-  &.centered {
+  &.full-width-slides {
     .slideshow-page {
-      padding: 0.5rem 4rem;
+      width: 100%;
     }
   }
 

@@ -22,6 +22,38 @@ import { useDebouncer } from "../../utils/useDebouncer";
 const SMOOTH_SCROLL_DECAY = 8;
 const MIN_TOUCH_MOVEMENT = 50;
 
+function getOffsetLeftWithinParent(el: Element, parent: Element) {
+  const elRect = el.getBoundingClientRect();
+  const parentRect = parent.getBoundingClientRect();
+  // return elRect.left - parentRect.left + parent.scrollLeft;
+  
+  // Remaining is for centering the element
+  const remaining = parentRect.width - elRect.width;
+  return elRect.left - parentRect.left + parent.scrollLeft - remaining / 2;
+}
+
+function scrollAt(el: HTMLElement, idx: number): number {
+  console.assert(Math.trunc(idx) === idx);
+  const child = el.children.item(idx);
+  if (child == null) {
+    console.warn(`No element found for slide index ${idx}`);
+    return NaN;
+  }
+  return getOffsetLeftWithinParent(child, el);
+}
+
+function scrollAtInterpolated(el: HTMLElement, idx: number): number {
+  const whole = Math.trunc(idx);
+  if (Math.abs(whole - idx) < 0.00001)
+    return scrollAt(el, Math.round(idx));
+
+  const frac = idx - whole;
+  const lower = scrollAt(el, Math.floor(idx));
+  const higher = scrollAt(el, Math.ceil(idx));
+
+  return lower * (1 - frac) + higher * frac;
+}
+
 type PageProps = {
   index: number;
   image?: boolean;
@@ -63,9 +95,10 @@ export default component$<{
    */
   right_icon?: IconNode,
   /**
-   * When set to true, makes the content not be behind the arrows
+   * When set to true, the slides are forced to be full-width
+   * Defaults to true
    */
-  centered?: boolean,
+  full_width_slides?: boolean,
 }>((props) => {
   useStyles$(styles);
 
@@ -134,7 +167,7 @@ export default component$<{
       if (current_touch.value != null) return;
 
       animated_slide_index.value = slide_index.value + (animated_slide_index.value - slide_index.value) * Math.exp(-SMOOTH_SCROLL_DECAY * dt);
-      el.scrollLeft = animated_slide_index.value * el.clientWidth;
+      el.scrollLeft = scrollAtInterpolated(el, animated_slide_index.value);
     };
     
     const frame = (t: number) => {
@@ -152,8 +185,12 @@ export default component$<{
   });
 
   return (
-    <div class={{ slideshow: true, "force-round-cursor": is_mouse_idle.value, centered: props.centered ?? false }}>
-      <div class={`arrow left-arrow ${is_mouse_idle.value ? "hide" : ""}`}>
+    <div class={{
+      slideshow: true,
+      "force-round-cursor": is_mouse_idle.value,
+      "full-width-slides": props.full_width_slides ?? true,
+    }}>
+      <div class={[`arrow`, `left-arrow`, { hide: is_mouse_idle.value }]}>
         <button
           aria-label="Slide precedante"
           onClick$={() => change_slide(-1)}
@@ -215,7 +252,7 @@ export default component$<{
           <Slot />
         </div>
       </div>
-      <div class={`arrow right-arrow ${is_mouse_idle.value ? "hide" : ""}`}>
+      <div class={[`arrow`, `right-arrow`, { hide: is_mouse_idle.value }]}>
         <button
           aria-label="Slide suivante"
           onClick$={() => change_slide(1)}
