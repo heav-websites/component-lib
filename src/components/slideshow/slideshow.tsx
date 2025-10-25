@@ -268,7 +268,6 @@ export default component$<{
 
           onWheel$={onWheel}
 
-          preventdefault:touchmove
           onTouchStart$={(t, el) => {
             for (const touch of t.changedTouches) {
               if (touch.identifier !== 0)
