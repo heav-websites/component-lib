@@ -166,6 +166,8 @@ export default component$<{
     const el = typeof document !== "undefined" ? document.getElementById(elementId) : null;
     if (el == null) return;
     let target = slide_index.value + diff;
+    if (Number.isNaN(target))
+      target = 0;
     if (!props.infinite) {
       target = Math.min(Math.max(target, 0), props.slide_count - 1);
     }
@@ -218,6 +220,8 @@ export default component$<{
       if (current_touch.value != null) return;
 
       animated_slide_index.value = slide_index.value + (animated_slide_index.value - slide_index.value) * Math.exp(-SMOOTH_SCROLL_DECAY * dt);
+      if (Number.isNaN(animated_slide_index.value))
+        animated_slide_index.value = slide_index.value;
 
       let finiteIndex = Math.round(animated_slide_index.value * 100_000) / 100_000;
       while (finiteIndex >= props.slide_count)
