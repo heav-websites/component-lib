@@ -205,15 +205,14 @@ export default component$<{
   });
 
   useVisibleTask$(({ cleanup }) => {
-    const el = typeof document !== "undefined" ? document.getElementById(elementId) : null;
-    if (el == null) return;
+    if (typeof document === "undefined") return;
 
     let stopped = false;
     let last_t: number = +(document.timeline.currentTime ?? 0) / 1000;
     animated_slide_index.value = slide_index.value;
 
     const update = (dt: number) => {
-      const el = typeof document !== "undefined" ? document.getElementById(elementId) : null;
+      const el = document.getElementById(elementId);
       if (el == null) return;
 
       if (current_touch.value != null) return;
