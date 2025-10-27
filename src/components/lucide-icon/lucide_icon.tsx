@@ -17,7 +17,7 @@ const LUCIDE_DEFAULT_ATTRIBUTES = {
 
 const LucideIcon = component$<{
   icon: IconNode;
-  size?: number;
+  size?: number | string;
   width?: number;
   outline?: Readonly<{ size: number; color: string }>;
 }>(({ icon, size, outline, width }) => {
@@ -26,8 +26,8 @@ const LucideIcon = component$<{
   const svgProps = {
     ...LUCIDE_DEFAULT_ATTRIBUTES,
 
-    width: LUCIDE_DEFAULT_ATTRIBUTES.width * (size??1),
-    height: LUCIDE_DEFAULT_ATTRIBUTES.height * (size??1),
+    width: typeof size === "string" ? size : LUCIDE_DEFAULT_ATTRIBUTES.width * (size??1),
+    height: typeof size === "string" ? size : LUCIDE_DEFAULT_ATTRIBUTES.height * (size??1),
     "stroke-width": width ?? LUCIDE_DEFAULT_ATTRIBUTES["stroke-width"],
   } as const;
 

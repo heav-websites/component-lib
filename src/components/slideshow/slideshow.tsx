@@ -135,6 +135,7 @@ export default component$<{
    * Chose the icon for the right arrow
    */
   right_icon?: IconNode,
+  arrows_size?: number | string,
   /**
    * When set to true, the slides are forced to be full-width
    * Defaults to true
@@ -171,6 +172,7 @@ export default component$<{
     if (!props.infinite) {
       target = Math.min(Math.max(target, 0), props.slide_count - 1);
     }
+    console.trace(`${slide_index.value} + ${diff} = ${target}`);
     slide_index.value = target;
     props.on_changed_slide?.(slide_index.value);
   });
@@ -259,61 +261,59 @@ export default component$<{
         >
           <LucideIcon
             icon={props.left_icon ?? ChevronLeft}
-            size={2} width={1}
+            size={props.arrows_size ?? 2} width={1}
             outline={{ size: 1, color: "white" }}
           />
         </button>
       </div>
-      <div class="slideshow-container-container">
-        <div
-          class="slideshow-container"
-          id={elementId}
+      <div
+        class="slideshow-container"
+        id={elementId}
 
-          onWheel$={onWheel}
+        onWheel$={onWheel}
 
-          onTouchStart$={(t, el) => {
-            for (const touch of t.changedTouches) {
-              if (touch.identifier !== 0)
-                continue;
-              current_touch.value = {
-                startTouchPos: { x: touch.clientX, y: touch.clientY },
-                startTouchScrollLeft: el.scrollLeft,
-              };
-            }
-          }}
-          onTouchMove$={(t, el) => {
-            const ct = current_touch.value;
-            if (!ct) return;
+        onTouchStart$={(t, el) => {
+          for (const touch of t.changedTouches) {
+            if (touch.identifier !== 0)
+              continue;
+            current_touch.value = {
+              startTouchPos: { x: touch.clientX, y: touch.clientY },
+              startTouchScrollLeft: el.scrollLeft,
+            };
+          }
+        }}
+        onTouchMove$={(t, el) => {
+          const ct = current_touch.value;
+          if (!ct) return;
 
-            for (const touch of t.changedTouches) {
-              if (touch.identifier !== 0)
-                continue;
-              const dx = ct.startTouchPos.x - touch.clientX;
-              el.scrollLeft = ct.startTouchScrollLeft + dx;
-            }
-          }}
-          onTouchEnd$={(t, el) => {
-            const ct = current_touch.value;
-            if (!ct) return;
+          for (const touch of t.changedTouches) {
+            if (touch.identifier !== 0)
+              continue;
+            const dx = ct.startTouchPos.x - touch.clientX;
+            el.scrollLeft = ct.startTouchScrollLeft + dx;
+          }
+        }}
+        onTouchEnd$={(t, el) => {
+          const ct = current_touch.value;
+          if (!ct) return;
 
-            for (const touch of t.changedTouches) {
-              if (touch.identifier !== 0)
-                continue;
+          for (const touch of t.changedTouches) {
+            if (touch.identifier !== 0)
+              continue;
 
-              const newSlideIndex = indexAtLeftScroll(el, el.scrollLeft);
-              const closestAround = Math.round((animated_slide_index.value - newSlideIndex) / props.slide_count);
-              animated_slide_index.value = props.slide_count * closestAround + newSlideIndex;
+            const newSlideIndex = indexAtLeftScroll(el, el.scrollLeft);
+            const closestAround = Math.round((animated_slide_index.value - newSlideIndex) / props.slide_count);
+            animated_slide_index.value = props.slide_count * closestAround + newSlideIndex;
 
-              const dx = ct.startTouchPos.x - touch.clientX;
-              if (Math.abs(dx) >= MIN_TOUCH_MOVEMENT)
-                change_slide(Math.sign(dx));
+            const dx = ct.startTouchPos.x - touch.clientX;
+            if (Math.abs(dx) >= MIN_TOUCH_MOVEMENT)
+              change_slide(Math.sign(dx));
 
-              current_touch.value = null;
-            }
-          }}
-        >
-          <Slot />
-        </div>
+            current_touch.value = null;
+          }
+        }}
+      >
+        <Slot />
       </div>
       <div class={[`arrow`, `right-arrow`, { hide: is_mouse_idle.value }]}>
         <button
@@ -323,7 +323,7 @@ export default component$<{
         >
           <LucideIcon
             icon={props.right_icon ?? ChevronRight}
-            size={2} width={1}
+            size={props.arrows_size ?? 2} width={1}
             outline={{ size: 1, color: "white" }}
           />
         </button>
