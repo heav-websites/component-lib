@@ -8,6 +8,7 @@ import {
   useTask$,
   Resource,
   QRL,
+  useVisibleTask$,
 } from "@builder.io/qwik";
 import { X } from "lucide";
 import type { JSX } from "@builder.io/qwik/jsx-runtime";
@@ -49,7 +50,6 @@ const InnerModal = (props: {
 );
 
 export default component$<{
-  containerRef?: Signal<HTMLDivElement | undefined>,
   modal_content: QRL<() => JSX.Element>,
   value: boolean;
   onClose$?: QRL<() => unknown>;
@@ -61,12 +61,6 @@ export default component$<{
   const is_mouse_idle = useIdleMouse();
   const should_render = useSignal(false);
   const ref = useSignal<HTMLDivElement | undefined>();
-
-  useTask$(({ track }) => {
-    const propsRef = track(() => props.containerRef);
-    if (propsRef == null) return;
-    propsRef.value = track(ref);
-  });
 
   useTask$(({ track, cleanup }) => {
     const new_value = track(() => props.value);
@@ -84,22 +78,24 @@ export default component$<{
     }
   });
 
-  useTask$(({ track }) => {
-    if (!track(() => props.fullscreen)) return;
+  if (props.fullscreen) {
+    useVisibleTask$(({ track }) => {
+      const el = track(ref);
+      if (el && props.value) {
+        console.log("request full screen");
+        el.requestFullscreen();
+      }
+    });
+    useVisibleTask$(({ track }) => {
+      const isClosing = !track(() => props.value);
+      const el = track(ref);
 
-    const el = track(ref);
-    if (el && props.value)
-      el.requestFullscreen();
-  });
-  useTask$(({ track }) => {
-    if (!track(() => props.fullscreen)) return;
-
-    const isClosing = !track(() => props.value);
-    const el = track(ref);
-
-    if (isClosing && el && el === document.fullscreenElement)
-      document.exitFullscreen();
-  });
+      if (isClosing && el && el === document.fullscreenElement) {
+        console.log("exit full screen");
+        document.exitFullscreen();
+      }
+    });
+  }
 
   useOnWindow(
     "keyup",
