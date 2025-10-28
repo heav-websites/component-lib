@@ -1,4 +1,5 @@
 import {
+    $,
   ClassList,
   component$,
   CSSProperties,
@@ -46,6 +47,7 @@ export default component$<{
   alt?: string;
   srcWidth?: number, quality?: number,
   fetchPriority?: "high" | "low" | "auto",
+  disableLoadingAnimation?: boolean,
 }>((props) => {
   useStylesScoped$(styles);
 
@@ -71,14 +73,17 @@ export default component$<{
   });
   const src = useComputed$(() => url(url_args.value));
 
+  const add_loaded = $((_: Event, el: HTMLElement) => el.parentElement?.classList.add("loaded"));
+  const add_error = $((_: Event, el: HTMLElement) => el.parentElement?.classList.add("error"));
+
   return (
     <div
-      class={["container", props.containerClass]}
+      class={["container", props.containerClass, { "loaded": !!props.disableLoadingAnimation }]}
       onClick$={props.containerOnClick}
       style={{ "aspect-ratio": `${props.img.width} / ${props.img.height}`, ...props.containerStyles }}
       {...props.containerDataAttributes}
     >
-      <div class="placeholder">
+      {!props.disableLoadingAnimation && <div class="placeholder">
         <div class="loading-icon icon-container">
           <LucideIcon icon={ImageIcon} size={4} />
         </div>
@@ -94,13 +99,13 @@ export default component$<{
             "max-height": "100%",
           }}
         />
-      </div>
+      </div>}
       <Slot name="before" />
       <img
-        {...{ onload: "this.parentElement.classList.add('loaded')" } as any}
-        onLoad$={(_, el) => el.parentElement?.classList.add("loaded")}
-        {...{ onerror: "this.parentElement.classList.add('error')" } as any}
-        onError$={(_, el) => el.parentElement?.classList.add("error")}
+        {...(props.disableLoadingAnimation ? {} : { onload: "this.parentElement.classList.add('loaded')" }) as any}
+        onLoad$={props.disableLoadingAnimation ? undefined : add_loaded}
+        {...(props.disableLoadingAnimation ? {} : { onerror: "this.parentElement.classList.add('error')" }) as any}
+        onError$={props.disableLoadingAnimation ? undefined : add_error}
 
         alt={props.alt ?? props.img.alternativeText ?? undefined}
         class="image"
