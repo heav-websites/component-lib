@@ -8,7 +8,7 @@ import {
 } from "@builder.io/qwik";
 
 const defaultProviderConfig: IdleMouseProviderConfig = {
-  mouseDuration: 750,
+  mouseDuration: 1000,
   touchscreenDuration: 1500,
 };
 
