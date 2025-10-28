@@ -35,8 +35,8 @@ type DataAttrs = { [key in `data-${string}`]?: string };
 
 export default component$<{
   img: strapi.Object<strapi.Image>;
+  baseUrl: string,
   enabledCloudflareImageTransform?: boolean,
-  baseUrl?: string,
   containerClass?: ClassList,
   containerDataAttributes?: DataAttrs,
   containerStyles?: CSSProperties,
