@@ -8,6 +8,7 @@ import {
   useTask$,
   Resource,
   QRL,
+  useVisibleTask$,
 } from "@builder.io/qwik";
 import { X } from "lucide";
 import type { JSX } from "@builder.io/qwik/jsx-runtime";
@@ -77,30 +78,21 @@ export default component$<{
     }
   });
 
-  useTask$(({ track }) => {
-    const isOpen = track(() => props.value);
-    const isFullscreen = track(() => props.fullscreen);
+  useVisibleTask$(({ track }) => {
+    const el = track(ref);
+    if (el && props.value) {
+      console.log("request full screen");
+      el.requestFullscreen();
+    }
+  });
+
+  useVisibleTask$(({ track }) => {
+    const isClosing = !track(() => props.value);
     const el = track(ref);
 
-    if (!isFullscreen) return;
-    if (typeof document === "undefined") return;
-
-    if (isOpen) {
-      if (el && document.fullscreenElement !== el) {
-        try {
-          el.requestFullscreen();
-        } catch (err) {
-          console.error("requestFullscreen failed", err);
-        }
-      }
-    } else {
-      if (el && document.fullscreenElement === el) {
-        try {
-          document.exitFullscreen();
-        } catch (err) {
-          console.error("exitFullscreen failed", err);
-        }
-      }
+    if (isClosing && el && el === document.fullscreenElement) {
+      console.log("exit full screen");
+      document.exitFullscreen();
     }
   });
 
