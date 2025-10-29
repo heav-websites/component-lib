@@ -12,6 +12,8 @@
   position: relative;
   display: block;
 
+  z-index: 0;
+
   .placeholder {
     opacity: 0.5;
     transition: opacity 250ms ease-in-out 250ms;
