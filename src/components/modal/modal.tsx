@@ -82,7 +82,12 @@ export default component$<{
     const el = track(ref);
     if (el && props.value) {
       console.log("request full screen");
-      el.requestFullscreen();
+      try {
+        el.requestFullscreen();
+      }
+      catch(e) {
+        console.warn("Fullscreen request error: ", e);
+      }
     }
   });
 
@@ -92,7 +97,12 @@ export default component$<{
 
     if (isClosing && el && el === document.fullscreenElement) {
       console.log("exit full screen");
-      document.exitFullscreen();
+      try {
+        document.exitFullscreen();
+      }
+      catch(e) {
+        console.warn("Exit full screen error: ", e);
+      }
     }
   });
 
