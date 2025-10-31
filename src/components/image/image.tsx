@@ -45,6 +45,7 @@ export default component$<{
   eager?: boolean;
   sizes?: string;
   alt?: string;
+  fallbackAlt?: string;
   srcWidth?: number, quality?: number,
   fetchPriority?: "high" | "low" | "auto",
   disableLoadingAnimation?: boolean,
@@ -107,7 +108,7 @@ export default component$<{
         {...(props.disableLoadingAnimation ? {} : { onerror: "this.parentElement.classList.add('error')" }) as any}
         onError$={props.disableLoadingAnimation ? undefined : add_error}
 
-        alt={props.alt ?? props.img.alternativeText ?? undefined}
+        alt={props.alt ?? props.img.alternativeText ?? props.fallbackAlt ?? undefined}
         class="image"
         height={props.img.height}
         width={props.img.width}
