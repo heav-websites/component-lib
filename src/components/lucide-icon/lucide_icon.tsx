@@ -1,4 +1,4 @@
-import { component$, useStylesScoped$ } from "@builder.io/qwik";
+import { ClassList, component$, useStylesScoped$ } from "@builder.io/qwik";
 import styles from "./lucide_icon.scss?inline";
 import type { IconNode } from "lucide";
 
@@ -20,21 +20,22 @@ const LucideIcon = component$<{
   size?: number | string;
   width?: number;
   outline?: Readonly<{ size: number; color: string }>;
-}>(({ icon, size, outline, width }) => {
+  class?: ClassList,
+}>(props => {
   useStylesScoped$(styles);
 
   const svgProps = {
     ...LUCIDE_DEFAULT_ATTRIBUTES,
 
-    width: typeof size === "string" ? size : LUCIDE_DEFAULT_ATTRIBUTES.width * (size??1),
-    height: typeof size === "string" ? size : LUCIDE_DEFAULT_ATTRIBUTES.height * (size??1),
-    "stroke-width": width ?? LUCIDE_DEFAULT_ATTRIBUTES["stroke-width"],
+    width: typeof props.size === "string" ? props.size : LUCIDE_DEFAULT_ATTRIBUTES.width * (props.size??1),
+    height: typeof props.size === "string" ? props.size : LUCIDE_DEFAULT_ATTRIBUTES.height * (props.size??1),
+    "stroke-width": props.width ?? LUCIDE_DEFAULT_ATTRIBUTES["stroke-width"],
   } as const;
 
-  if (outline === undefined) {
+  if (props.outline === undefined) {
     return (
       <svg {...svgProps}>
-        {icon.map(([Tag, props], i) => (
+        {props.icon.map(([Tag, props], i) => (
           <Tag key={i} {...props}/>
         ))}
       </svg>
@@ -42,23 +43,23 @@ const LucideIcon = component$<{
   }
 
   return (
-    <div class="lucide-icon">
-      {outline ? (
+    <div class={["lucide-icon", props.class]}>
+      {props.outline ? (
         <div class="other">
           <svg
             {...svgProps}
             overflow="visible"
-            stroke-width={ 2 * outline.size }
-            style={{ color: outline.color }}
+            stroke-width={ 2 * props.outline.size }
+            style={{ color: props.outline.color }}
           >
-            {icon.map(([Tag, props], i) => (
+            {props.icon.map(([Tag, props], i) => (
               <Tag key={i} {...props}/>
             ))}
           </svg>
         </div>
       ) : null}
       <svg {...svgProps}>
-        {icon.map(([Tag, props], i) => (
+        {props.icon.map(([Tag, props], i) => (
           <Tag key={i} {...props}/>
         ))}
       </svg>
