@@ -34,7 +34,7 @@ const LucideIcon = component$<{
 
   if (props.outline === undefined) {
     return (
-      <svg {...svgProps}>
+      <svg {...svgProps} class={props.class}>
         {props.icon.map(([Tag, props], i) => (
           <Tag key={i} {...props}/>
         ))}
