@@ -92,6 +92,9 @@ export default component$<{
   });
 
   useVisibleTask$(({ track }) => {
+    const enableFullscreen = track(() => props.fullscreen);
+    if (!enableFullscreen)
+      return;
     const isClosing = !track(() => props.value);
     const el = track(ref);
 
