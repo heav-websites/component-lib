@@ -3,6 +3,7 @@ import {
   QRL,
   Slot,
   component$,
+  sync$,
   untrack,
   useComputed$,
   useId,
@@ -16,11 +17,6 @@ import styles from "./slideshow.scss?inline";
 import LucideIcon from "../../components/lucide-icon/lucide_icon";
 import { ChevronLeft, ChevronRight, IconNode } from "lucide";
 import { useIdleMouse } from "../../hooks/use_idle_mouse";
-import { useDebouncer } from "../../utils/useDebouncer";
-
-// Higher = faster animation
-const SMOOTH_SCROLL_DECAY = 8;
-const MIN_TOUCH_MOVEMENT = 50;
 
 function getOffsetLeftWithinParent(el: Element, parent: Element) {
   const elRect = el.getBoundingClientRect();
@@ -51,53 +47,53 @@ function leftScrollAtIndex(el: HTMLElement, idx: number): number {
   return getOffsetLeftWithinParent(child, el);
 }
 
-function leftScrollAtIndexInterpolated(el: HTMLElement, idx: number): number {
-  const whole = Math.trunc(idx);
-  if (Math.abs(whole - idx) < 0.00001)
-    return leftScrollAtIndex(el, Math.round(idx));
+// function leftScrollAtIndexInterpolated(el: HTMLElement, idx: number): number {
+//   const whole = Math.trunc(idx);
+//   if (Math.abs(whole - idx) < 0.00001)
+//     return leftScrollAtIndex(el, Math.round(idx));
 
-  const floor = Math.floor(idx);
-  const ceil = Math.ceil(idx);
+//   const floor = Math.floor(idx);
+//   const ceil = Math.ceil(idx);
 
-  // const frac = Math.abs(idx - whole);
-  const lower = leftScrollAtIndex(el, floor);
-  const higher = leftScrollAtIndex(el, ceil);
+//   // const frac = Math.abs(idx - whole);
+//   const lower = leftScrollAtIndex(el, floor);
+//   const higher = leftScrollAtIndex(el, ceil);
 
-  return lower * (1 - Math.abs(floor - idx)) + higher * (1 - Math.abs(ceil - idx));
-}
+//   return lower * (1 - Math.abs(floor - idx)) + higher * (1 - Math.abs(ceil - idx));
+// }
 
-function indexAtLeftScroll(el: HTMLElement, scrollLeft: number): number {
-  type I = { dist: number, scroll: number, index: number };
-  let closestSmaller: I | null = null;
-  let closestBigger: I | null = null;
+// function indexAtLeftScroll(el: HTMLElement, scrollLeft: number): number {
+//   type I = { dist: number, scroll: number, index: number };
+//   let closestSmaller: I | null = null;
+//   let closestBigger: I | null = null;
 
-  for (const child of el.children) {
-    const scroll = getOffsetLeftWithinParent(child, el);
-    const dist = Math.abs(scrollLeft - scroll);
-    if (scrollLeft >= scroll && (closestSmaller == null || closestSmaller.dist > dist)) {
-      closestSmaller = { dist, scroll, index: parseInt(child.getAttribute("data-slide-index") ?? "NaN") };
-    }
-    if (scrollLeft <= scroll && (closestBigger == null || closestBigger.dist > dist)) {
-      closestBigger = { dist, scroll, index: parseInt(child.getAttribute("data-slide-index") ?? "NaN") };
-    }
-  }
+//   for (const child of el.children) {
+//     const scroll = getOffsetLeftWithinParent(child, el);
+//     const dist = Math.abs(scrollLeft - scroll);
+//     if (scrollLeft >= scroll && (closestSmaller == null || closestSmaller.dist > dist)) {
+//       closestSmaller = { dist, scroll, index: parseInt(child.getAttribute("data-slide-index") ?? "NaN") };
+//     }
+//     if (scrollLeft <= scroll && (closestBigger == null || closestBigger.dist > dist)) {
+//       closestBigger = { dist, scroll, index: parseInt(child.getAttribute("data-slide-index") ?? "NaN") };
+//     }
+//   }
 
-  if (closestBigger === null || closestSmaller === null)
-    return closestBigger?.index ?? closestSmaller?.index ?? NaN;
+//   if (closestBigger === null || closestSmaller === null)
+//     return closestBigger?.index ?? closestSmaller?.index ?? NaN;
 
-  const gap = closestBigger.scroll - closestSmaller.scroll;
-  if (gap === 0)
-    return closestBigger.index;
+//   const gap = closestBigger.scroll - closestSmaller.scroll;
+//   if (gap === 0)
+//     return closestBigger.index;
 
-  console.log({
-    closestBigger,
-    closestSmaller,
-    gap,
-    result: closestSmaller.index * (1 - closestSmaller.dist / gap) + closestBigger.index * (1 - closestBigger.dist / gap),
-  });
+//   console.log({
+//     closestBigger,
+//     closestSmaller,
+//     gap,
+//     result: closestSmaller.index * (1 - closestSmaller.dist / gap) + closestBigger.index * (1 - closestBigger.dist / gap),
+//   });
 
-  return closestSmaller.index * (1 - closestSmaller.dist / gap) + closestBigger.index * (1 - closestBigger.dist / gap);
-}
+//   return closestSmaller.index * (1 - closestSmaller.dist / gap) + closestBigger.index * (1 - closestBigger.dist / gap);
+// }
 
 export const SlidePage = component$<{
   index: number;
@@ -150,49 +146,43 @@ export default component$<{
   useStyles$(styles);
 
   const id = useId();
-  const elementId = `${id}-element`;
+  const slideshowContainerId = `${id}-element`;
 
   const is_mouse_idle_raw = useIdleMouse();
   const is_mouse_idle = useComputed$(() => (props.idle_hide_arrows ?? true) && is_mouse_idle_raw.value);
 
-  const current_touch = useSignal<{
-    startTouchPos: {x: number, y: number},
-    startTouchScrollLeft: number,
-  } | null>(null);
-
   const slide_index = useSignal(untrack(() => props.slide_index) ?? 0);
-  const animated_slide_index = useSignal(untrack(() => slide_index.value));
+  const is_first_scroll = useSignal(true);
 
   const change_slide = $((diff: number) => {
-    const el = typeof document !== "undefined" ? document.getElementById(elementId) : null;
-    if (el == null) return;
     let target = slide_index.value + diff;
     if (Number.isNaN(target))
       target = 0;
-    if (!props.infinite) {
+    if (!props.infinite)
       target = Math.min(Math.max(target, 0), props.slide_count - 1);
-    }
-    console.trace(`${slide_index.value} + ${diff} = ${target}`);
     slide_index.value = target;
     props.on_changed_slide?.(slide_index.value);
   });
-  const debounced_change_slide = useDebouncer(change_slide, 100);
 
-  useOnWindow(
-    "keydown",
-    $(e => {
-      if (!(e instanceof KeyboardEvent))
-        return;
-      if (e.key === "ArrowLeft") {
-        change_slide(-1);
-        e.preventDefault();
-      }
-      else if (e.key === "ArrowRight") {
-        change_slide(1);
-        e.preventDefault();
-      }
-    })
-  );
+  useOnWindow("keydown", sync$((e: Event) => {
+    if (!(e instanceof KeyboardEvent))
+      return;
+    switch(e.key) {
+    case "ArrowLeft":
+    case "ArrowRight":
+      e.preventDefault();
+      break;
+    default:
+    }
+  }));
+  useOnWindow("keydown", $(e => {
+    if (!(e instanceof KeyboardEvent))
+      return;
+    if (e.key === "ArrowLeft")
+      change_slide(-1);
+    else if (e.key === "ArrowRight")
+      change_slide(1);
+  }));
 
   useTask$(({ track }) => {
     const nidx = track(() => props.slide_index);
@@ -202,50 +192,17 @@ export default component$<{
     }
   });
 
-  const onWheel = $((e: WheelEvent) => {
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-      debounced_change_slide(Math.sign(e.deltaX));
-    }
-  });
+  useVisibleTask$(({ track }) => {
+    const idx = track(slide_index);
+    const el = typeof document !== "undefined" ? document.getElementById(slideshowContainerId) : null;
+    if (el == null) return;
 
-  useVisibleTask$(({ cleanup }) => {
-    if (typeof document === "undefined") return;
-
-    let stopped = false;
-    let last_t: number = +(document.timeline.currentTime ?? 0) / 1000;
-    animated_slide_index.value = slide_index.value;
-
-    const update = (dt: number) => {
-      const el = document.getElementById(elementId);
-      if (el == null) return;
-
-      if (current_touch.value != null) return;
-
-      animated_slide_index.value = slide_index.value + (animated_slide_index.value - slide_index.value) * Math.exp(-SMOOTH_SCROLL_DECAY * dt);
-      if (Number.isNaN(animated_slide_index.value))
-        animated_slide_index.value = slide_index.value;
-
-      let finiteIndex = Math.round(animated_slide_index.value * 100_000) / 100_000;
-      while (finiteIndex >= props.slide_count)
-        finiteIndex -= props.slide_count;
-      while (finiteIndex <= -1)
-        finiteIndex += props.slide_count;
-      el.scrollLeft = leftScrollAtIndexInterpolated(el, finiteIndex);
-    };
-    
-    const frame = (t: number) => {
-      t /= 1000;
-      if (stopped) return;
-      update(t - last_t);
-      last_t = t;
-      requestAnimationFrame(frame);
-    };
-    frame(last_t);
-
-    cleanup(() => {
-      stopped = true;
-    })
-  });
+    el.scrollTo({
+      behavior: is_first_scroll.value ? "instant" : "smooth",
+      left: leftScrollAtIndex(el, idx),
+    });
+    is_first_scroll.value = false;
+  }, { strategy: "document-idle" });
 
   return (
     <div class={{
@@ -268,50 +225,7 @@ export default component$<{
       </div>
       <div
         class="slideshow-container"
-        id={elementId}
-
-        onWheel$={onWheel}
-
-        onTouchStart$={(t, el) => {
-          for (const touch of t.changedTouches) {
-            if (touch.identifier !== 0)
-              continue;
-            current_touch.value = {
-              startTouchPos: { x: touch.clientX, y: touch.clientY },
-              startTouchScrollLeft: el.scrollLeft,
-            };
-          }
-        }}
-        onTouchMove$={(t, el) => {
-          const ct = current_touch.value;
-          if (!ct) return;
-
-          for (const touch of t.changedTouches) {
-            if (touch.identifier !== 0)
-              continue;
-            const dx = ct.startTouchPos.x - touch.clientX;
-            el.scrollLeft = ct.startTouchScrollLeft + dx;
-          }
-        }}
-        onTouchEnd$={(t, el) => {
-          const ct = current_touch.value;
-          if (!ct) return;
-
-          for (const touch of t.changedTouches) {
-            if (touch.identifier !== 0)
-              continue;
-
-            const newSlideIndex = indexAtLeftScroll(el, el.scrollLeft);
-            const closestAround = Math.round((animated_slide_index.value - newSlideIndex) / props.slide_count);
-            animated_slide_index.value = props.slide_count * closestAround + newSlideIndex;
-
-            const dx = ct.startTouchPos.x - touch.clientX;
-            if (Math.abs(dx) >= MIN_TOUCH_MOVEMENT)
-              change_slide(Math.sign(dx));
-
-            current_touch.value = null;
-          }
-        }}
+        id={slideshowContainerId}
       >
         <Slot />
       </div>

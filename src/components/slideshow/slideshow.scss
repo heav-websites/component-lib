@@ -12,10 +12,12 @@
   .slideshow-container {
     flex-grow: 1;
     z-index: 15;
-    overflow: hidden;
+    overflow: scroll;
 
     display: flex;
     flex-direction: row;
+
+    scroll-snap-type: x mandatory;
 
     &::-webkit-scrollbar {
       display: none;
