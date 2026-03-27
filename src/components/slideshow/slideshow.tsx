@@ -62,38 +62,38 @@ function leftScrollAtIndex(el: HTMLElement, idx: number): number {
 //   return lower * (1 - Math.abs(floor - idx)) + higher * (1 - Math.abs(ceil - idx));
 // }
 
-// function indexAtLeftScroll(el: HTMLElement, scrollLeft: number): number {
-//   type I = { dist: number, scroll: number, index: number };
-//   let closestSmaller: I | null = null;
-//   let closestBigger: I | null = null;
+function indexAtLeftScroll(el: HTMLElement, scrollLeft: number): number {
+  type I = { dist: number, scroll: number, index: number };
+  let closestSmaller: I | null = null;
+  let closestBigger: I | null = null;
 
-//   for (const child of el.children) {
-//     const scroll = getOffsetLeftWithinParent(child, el);
-//     const dist = Math.abs(scrollLeft - scroll);
-//     if (scrollLeft >= scroll && (closestSmaller == null || closestSmaller.dist > dist)) {
-//       closestSmaller = { dist, scroll, index: parseInt(child.getAttribute("data-slide-index") ?? "NaN") };
-//     }
-//     if (scrollLeft <= scroll && (closestBigger == null || closestBigger.dist > dist)) {
-//       closestBigger = { dist, scroll, index: parseInt(child.getAttribute("data-slide-index") ?? "NaN") };
-//     }
-//   }
+  for (const child of el.children) {
+    const scroll = getOffsetLeftWithinParent(child, el);
+    const dist = Math.abs(scrollLeft - scroll);
+    if (scrollLeft >= scroll && (closestSmaller == null || closestSmaller.dist > dist)) {
+      closestSmaller = { dist, scroll, index: parseInt(child.getAttribute("data-slide-index") ?? "NaN") };
+    }
+    if (scrollLeft <= scroll && (closestBigger == null || closestBigger.dist > dist)) {
+      closestBigger = { dist, scroll, index: parseInt(child.getAttribute("data-slide-index") ?? "NaN") };
+    }
+  }
 
-//   if (closestBigger === null || closestSmaller === null)
-//     return closestBigger?.index ?? closestSmaller?.index ?? NaN;
+  if (closestBigger === null || closestSmaller === null)
+    return closestBigger?.index ?? closestSmaller?.index ?? NaN;
 
-//   const gap = closestBigger.scroll - closestSmaller.scroll;
-//   if (gap === 0)
-//     return closestBigger.index;
+  const gap = closestBigger.scroll - closestSmaller.scroll;
+  if (gap === 0)
+    return closestBigger.index;
 
-//   console.log({
-//     closestBigger,
-//     closestSmaller,
-//     gap,
-//     result: closestSmaller.index * (1 - closestSmaller.dist / gap) + closestBigger.index * (1 - closestBigger.dist / gap),
-//   });
+  // console.log({
+  //   closestBigger,
+  //   closestSmaller,
+  //   gap,
+  //   result: closestSmaller.index * (1 - closestSmaller.dist / gap) + closestBigger.index * (1 - closestBigger.dist / gap),
+  // });
 
-//   return closestSmaller.index * (1 - closestSmaller.dist / gap) + closestBigger.index * (1 - closestBigger.dist / gap);
-// }
+  return closestSmaller.index * (1 - closestSmaller.dist / gap) + closestBigger.index * (1 - closestBigger.dist / gap);
+}
 
 export const SlidePage = component$<{
   index: number;
@@ -151,17 +151,41 @@ export default component$<{
   const is_mouse_idle_raw = useIdleMouse();
   const is_mouse_idle = useComputed$(() => (props.idle_hide_arrows ?? true) && is_mouse_idle_raw.value);
 
+  // Set after pressing a button and the element is currently smooth scrolling, reset after
+  // Used to distinguish scroll events
+  const current_movement = useSignal<null | AbortController>(null);
   const slide_index = useSignal(untrack(() => props.slide_index) ?? 0);
-  const is_first_scroll = useSignal(true);
 
+  const set_slide = $((new_idx: number) => {
+    if (slide_index.value === new_idx)
+      return;
+    slide_index.value = new_idx;
+    props.on_changed_slide?.(new_idx);
+  });
   const change_slide = $((diff: number) => {
     let target = slide_index.value + diff;
     if (Number.isNaN(target))
       target = 0;
     if (!props.infinite)
       target = Math.min(Math.max(target, 0), props.slide_count - 1);
-    slide_index.value = target;
-    props.on_changed_slide?.(slide_index.value);
+
+    set_slide(target);
+
+    const el = typeof document !== "undefined" ? document.getElementById(slideshowContainerId) : null;
+    if (el == null) return;
+
+    const controller = new AbortController();
+    current_movement.value?.abort();
+    current_movement.value = controller;
+    console.log(`Scrolling to #${target}`);
+    el.scrollTo({
+      behavior: "smooth",
+      left: leftScrollAtIndex(el, target),
+    });
+    el.addEventListener("scrollend", () => {
+      if (current_movement.value === controller)
+        current_movement.value = null;
+    }, { once: true, signal: controller.signal })
   });
 
   useOnWindow("keydown", sync$((e: Event) => {
@@ -192,17 +216,20 @@ export default component$<{
     }
   });
 
-  useVisibleTask$(({ track }) => {
-    const idx = track(slide_index);
+  // Sets the scrollLeft on container render based on the slide_index
+  useVisibleTask$(() => {
     const el = typeof document !== "undefined" ? document.getElementById(slideshowContainerId) : null;
     if (el == null) return;
 
     el.scrollTo({
-      behavior: is_first_scroll.value ? "instant" : "smooth",
-      left: leftScrollAtIndex(el, idx),
+      behavior: "instant",
+      left: leftScrollAtIndex(el, slide_index.value),
     });
-    is_first_scroll.value = false;
-  }, { strategy: "document-idle" });
+  }, { strategy: "document-ready" });
+
+  useTask$(({ track }) => {
+    console.log("slide_index:", track(slide_index));
+  });
 
   return (
     <div class={{
@@ -226,6 +253,12 @@ export default component$<{
       <div
         class="slideshow-container"
         id={slideshowContainerId}
+        onScroll$={(_event, el) => {
+          // If we are currently moving to a slide then the slide index
+          // shouldn't be updated as we are scrolling
+          if (!current_movement.value)
+            set_slide(Math.round(indexAtLeftScroll(el, el.scrollLeft)));
+        }}
       >
         <Slot />
       </div>
