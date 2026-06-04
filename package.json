@@ -8,9 +8,14 @@
   "types": "./lib-types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./lib-types/index.d.ts",
       "import": "./lib/index.qwik.mjs",
-      "require": "./lib/index.qwik.cjs",
-      "types": "./lib-types/index.d.ts"
+      "require": "./lib/index.qwik.cjs"
+    },
+    "./brand-icons/instagram": {
+      "types": "./lib-types/components/brand-icons/instagram.d.ts",
+      "import": "./lib/components/brand-icons/instagram.qwik.mjs",
+      "require": "./lib/components/brand-icons/instagram.qwik.cjs"
     }
   },
   "files": [

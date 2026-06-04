@@ -12,7 +12,7 @@ export default defineConfig(() => {
     build: {
       target: "es2020",
       lib: {
-        entry: "./src/index.ts",
+        entry: ["./src/index.ts", "./src/components/brand-icons/instagram.tsx"],
         formats: ["es", "cjs"],
         fileName: (format, entryName) =>
           `${entryName}.qwik.${format === "es" ? "mjs" : "cjs"}`,
