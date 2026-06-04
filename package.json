@@ -50,7 +50,7 @@
     "vite-tsconfig-paths": "^5.1.4"
   },
   "dependencies": {
-    "lucide": "^0.577.0",
-    "marked": "^16.4.1"
+    "lucide": "^1.17.0",
+    "marked": "^18.0.5"
   }
 }
