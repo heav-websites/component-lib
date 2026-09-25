@@ -177,7 +177,6 @@ export default component$<{
     const controller = new AbortController();
     current_movement.value?.abort();
     current_movement.value = controller;
-    console.log(`Scrolling to #${target}`);
     el.scrollTo({
       behavior: "smooth",
       left: leftScrollAtIndex(el, target),
@@ -226,10 +225,6 @@ export default component$<{
       left: leftScrollAtIndex(el, slide_index.value),
     });
   }, { strategy: "document-ready" });
-
-  useTask$(({ track }) => {
-    console.log("slide_index:", track(slide_index));
-  });
 
   return (
     <div class={{
