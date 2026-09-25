@@ -15,7 +15,8 @@ export type ImageCore = {
 
 export type Image = ImageCore & {
   alternativeText?: string | null;
-  formats: {
-    [key: string]: ImageCore & {};
-  }[];
+  /** Resized variants, keyed by size name (thumbnail, small, medium, large). */
+  formats?: {
+    [key: string]: ImageCore;
+  } | null;
 };
