@@ -79,15 +79,15 @@ export default component$<{
   });
 
   useVisibleTask$(({ track }) => {
+    const enableFullscreen = track(() => props.fullscreen);
+    if (!enableFullscreen)
+      return;
     const el = track(ref);
     if (el && props.value) {
-      console.log("request full screen");
-      try {
-        el.requestFullscreen();
-      }
-      catch(e) {
+      // A promise: a failure (e.g. no user gesture) is a rejection, not a throw.
+      el.requestFullscreen().catch((e) => {
         console.warn("Fullscreen request error: ", e);
-      }
+      });
     }
   });
 
@@ -99,13 +99,9 @@ export default component$<{
     const el = track(ref);
 
     if (isClosing && el && el === document.fullscreenElement) {
-      console.log("exit full screen");
-      try {
-        document.exitFullscreen();
-      }
-      catch(e) {
+      document.exitFullscreen().catch((e) => {
         console.warn("Exit full screen error: ", e);
-      }
+      });
     }
   });
 
