@@ -10,7 +10,8 @@
       margin: var(--margin);
       margin-left: 0;
       margin-right: 0;
-      color: #666;
+      // Overridable by the page, e.g. to match its own secondary text colour.
+      color: var(--markdown-blockquote-color, #666);
       display: grid;
       grid-template-columns: auto auto auto;
       justify-content: center;
